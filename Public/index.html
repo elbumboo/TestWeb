@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Heart - Valentine's</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Poppins', 'sans-serif'],
+          serif: ['Playfair Display', 'serif'],
+        },
+        colors: {
+          'brand-pink': '#f45b69',
+          'brand-soft': '#fff5f6',
+          'brand-dark': '#2d2d2d',
+        }
+      }
+    }
+  }
+</script>
+
+<style>
+  /* Efek transisi halus untuk semua perubahan */
+  * { transition: all 0.3s ease-in-out; }
+  
+  /* Latar belakang dengan pola lingkaran halus (seperti di gambar) */
+  body {
+    background-color: #fff5f6;
+    background-image: radial-gradient(#ffe3e6 2px, transparent 2px);
+    background-size: 40px 40px;
+    overflow-x: hidden;
+  }
+
+  .glass-nav {
+    background: rgba(255, 245, 246, 0.8);
+    backdrop-filter: blur(10px);
+  }
+
+  /* Animasi Fade untuk teks */
+  .fade-out { opacity: 0; transform: translateY(-10px); }
+  .fade-in { opacity: 1; transform: translateY(0); }
+
+  /* Tombol Iya yang membesar */
+  #btn-yes {
+    transform: scale(1);
+    z-index: 10;
+    position: relative;
+  }
+</style>
+</head>
+<body class="font-sans text-brand-dark min-h-screen flex flex-col relative">
+
+  <!-- MAIN CONTENT -->
+  <main class="flex-1 flex items-center justify-center px-6 py-12 relative">
+    <div class="max-w-6xl w-full grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+      
+      <!-- KIRI: Teks & Tombol -->
+      <div class="order-2 md:order-1 flex flex-col items-start justify-center z-10 py-12">
+        
+        <div class="flex flex-col mt-4 mb-10 min-h-[120px]">
+          <p id="subtitle" class="text-gray-700 text-5xl md:text-6xl font-light leading-tight tracking-tight fade-in">
+            <span class="font-extrabold text-brand-pink block mb-3">Kangen?</span>
+          </p>
+        </div>
+
+        <div class="flex gap-4 relative w-full h-24 items-center">
+          <button id="btn-yes" class="bg-brand-pink text-white font-semibold py-3 px-10 rounded-xl shadow-lg shadow-pink-200 hover:bg-pink-600 hover:shadow-pink-300 transition-all duration-300">
+            Iya
+          </button>
+          <button id="btn-no" class="border-2 border-brand-pink text-brand-pink font-semibold py-3 px-10 rounded-xl hover:bg-pink-50 transition-all duration-300">
+            Engga
+          </button>
+        </div>
+      </div>
+
+      <!-- KANAN: Gambar -->
+      <div class="order-1 md:order-2 relative">
+        <!-- Efek glow di belakang gambar -->
+        <div class="absolute inset-0 bg-brand-pink opacity-20 blur-3xl rounded-full transform scale-90"></div>
+        <img 
+          src="fotoclara.jpeg" 
+          alt="Foto Clara" 
+          class="relative w-full h-[400px] md:h-[500px] object-cover rounded-[3rem] shadow-2xl border-4 border-white"
+        >
+        <!-- Label Harga (Simulasi seperti di gambar) -->
+        <div class="absolute bottom-6 right-6 bg-white/90 backdrop-blur px-6 py-3 rounded-2xl shadow-lg flex flex-col items-end">
+          <span class="text-xs font-semibold text-gray-400 tracking-wider">Strawberry box</span>
+          <span class="text-xl font-bold text-brand-pink">Rp 250.000</span>
+        </div>
+      </div>
+      
+    </div>
+  </main>
+
+  <!-- OVERLAY NOTIFIKASI AKHIR -->
+  <div id="overlay" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden items-center justify-center z-50 px-4 opacity-0 transition-opacity duration-500">
+    <div class="bg-white rounded-[2rem] p-10 max-w-md w-full text-center shadow-2xl transform scale-90 transition-transform duration-500">
+      <div class="w-20 h-20 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-6">
+        <span class="text-4xl">💖</span>
+      </div>
+      <h2 class="font-serif text-3xl font-bold text-brand-pink mb-4">Terkirim!</h2>
+      <p class="text-gray-600 text-lg">
+        "MUPENGGGG, bercandaa...siap siap dulu gih"
+      </p>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    let step = 1;
+    let scaleSize = 1;
+    let isTransitioning = false;
+
+    const btnYes = document.getElementById('btn-yes');
+    const btnNo = document.getElementById('btn-no');
+    const subtitle = document.getElementById('subtitle');
+    const overlay = document.getElementById('overlay');
+    const overlayContent = overlay.querySelector('div');
+
+    // FUNGSI UNTUK MEMBESARKAN TOMBOL IYA
+    function growYesButton() {
+      // Tambah ukuran (maksimal 4x lipat biar ga terlalu pecah)
+      if (scaleSize < 4) {
+        scaleSize += 0.3;
+        btnYes.style.transform = `scale(${scaleSize})`;
+        
+        // Kalau tombol udah gede banget, bikin tombol "Engga" kecil
+        if (scaleSize > 2) {
+          btnNo.style.transform = `scale(${Math.max(0.5, 1 - (scaleSize * 0.1))})`;
+          btnNo.style.opacity = Math.max(0.2, 1 - (scaleSize * 0.15));
+        }
+      }
+    }
+
+    // EVENT UNTUK TOMBOL "ENGG A"
+    // Mouse enter (laptop), touchstart (HP), & click (jika maksa klik)
+    btnNo.addEventListener('mouseenter', growYesButton);
+    btnNo.addEventListener('click', (e) => {
+      e.preventDefault();
+      growYesButton();
+      // Opsional: kalau di-klik maksa, tombolnya "kabur" (bisa lo tambahin logic pindah posisi)
+    });
+    btnNo.addEventListener('touchstart', (e) => {
+      e.preventDefault(); // Biar ga nge-zoom layar di HP
+      growYesButton();
+    });
+
+    // EVENT UNTUK TOMBOL "IYA"
+    btnYes.addEventListener('click', async () => {
+      if (isTransitioning) return; // Cegah double click
+      isTransitioning = true;
+
+      if (step === 1) {
+        // FASE 1: Transisi ke pertanyaan ke-2
+        subtitle.classList.remove('fade-in');
+        subtitle.classList.add('fade-out');
+
+        setTimeout(() => {
+          subtitle.textContent = "Mau call sekarang?";
+          subtitle.classList.remove('fade-out');
+          subtitle.classList.add('fade-in');
+          
+          // Reset tombol
+          scaleSize = 1;
+          btnYes.style.transform = `scale(1)`;
+          btnNo.style.transform = `scale(1)`;
+          btnNo.style.opacity = 1;
+
+          step = 2;
+          isTransitioning = false;
+        }, 400); // Tunggu 400ms sesuai animasi CSS
+
+      } else if (step === 2) {
+        // FASE 2: Kirim sinyal ke laptop & Tampilkan Overlay
+        
+        // 1. Tampilkan Overlay Manis
+        overlay.classList.remove('hidden');
+        overlay.classList.add('flex');
+        
+        // Sedikit delay biar animasi opacity & scale-nya jalan
+        setTimeout(() => {
+          overlay.classList.remove('opacity-0');
+          overlayContent.classList.remove('scale-90');
+        }, 10);
+
+        // 2. Logika Kirim ke Server (Alarm Laptop)
+        console.log("Clara manggil"); // Sesuai request lo
+        
+        try {
+          const response = await fetch('/api/kangen', { method: 'POST' });
+          if (response.ok) {
+            console.log("✅ Alarm di laptop berhasil dipicu!");
+          }
+        } catch (error) {
+          console.error("❌ Gagal kirim sinyal:", error);
+        }
+
+        // 3. Efek hujan hati (opsional, biar makin romantis)
+        spawnHearts();
+        
+        isTransitioning = false;
+      }
+    });
+
+    // FUNGSI HUJAN HATI (Efek Visual Tambahan)
+    function spawnHearts() {
+      for (let i = 0; i < 20; i++) {
+        setTimeout(() => {
+          const heart = document.createElement('div');
+          heart.className = 'fixed text-2xl pointer-events-none';
+          heart.textContent = ['❤️','💖','💕','💘','🌸'][Math.floor(Math.random() * 5)];
+          heart.style.left = Math.random() * 100 + 'vw';
+          heart.style.top = '100vh';
+          heart.style.zIndex = '100';
+          heart.style.transition = 'transform 2s ease-out, opacity 2s ease-out';
+          document.body.appendChild(heart);
+          
+          // Animasikan terbang ke atas
+          requestAnimationFrame(() => {
+            heart.style.transform = `translateY(-${window.innerHeight + 100}px) scale(${Math.random() * 2 + 1})`;
+            heart.style.opacity = '0';
+          });
+          
+          // Hapus elemen setelah animasi selesai
+          setTimeout(() => heart.remove(), 2000);
+        }, i * 100);
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dashboard Kamu</title>
+<style>
+  body{margin:0;font-family:system-ui,sans-serif;background:#0b0b0f;color:#eee;
+       min-height:100vh;display:flex;flex-direction:column;align-items:center;
+       justify-content:center;padding:20px;gap:16px;transition:background .2s}
+  body.alarm{animation:bgflash .7s infinite alternate}
+  @keyframes bgflash{from{background:#3a0011}to{background:#0b0b0f}}
+  #status{font-size:28px;font-weight:700;text-align:center}
+  #status.alert{color:#ff4d6d;animation:pulse .6s infinite alternate}
+  @keyframes pulse{from{transform:scale(1)}to{transform:scale(1.08)}}
+  .btn{padding:12px 22px;border-radius:999px;border:none;background:#ff4d6d;
+       color:#fff;font-weight:700;cursor:pointer;font-size:16px}
+  .btn.stop{display:none;background:#444;font-size:22px;padding:18px 36px;
+            animation:pulse .6s infinite alternate}
+  body.alarm .btn.stop{display:inline-block}
+  body.alarm #enableBtn{display:none}
+  #log{font-size:13px;color:#888;max-height:150px;overflow:auto}
+</style>
+</head>
+<body>
+  <div id="status">Nunggu dia kangen…</div>
+  <button id="enableBtn" class="btn">Aktifkan notifikasi + suara</button>
+  <button id="stopBtn"  class="btn stop">🔕 MATIKAN ALARM</button>
+  <div id="log"></div>
+
+<script>
+  const statusEl  = document.getElementById('status');
+  const logEl     = document.getElementById('log');
+  const enableBtn = document.getElementById('enableBtn');
+  const stopBtn   = document.getElementById('stopBtn');
+
+  let audioCtx, alarmTimer, titleTimer;
+  const originalTitle = document.title;
+
+  function getCtx() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  }
+
+  // Siren 4 nada (naik-turun 2x)
+  function sirenOnce() {
+    const ctx = getCtx();
+    const now = ctx.currentTime;
+    [880, 1320, 880, 1320].forEach((f, i) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = f;
+      const t = now + i * 0.18;
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.5, t + 0.02);   // volume 0.5 (cukup kenceng)
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.17);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(t); osc.stop(t + 0.18);
+    });
+  }
+
+  function startAlarm() {
+    if (alarmTimer) return;
+    document.body.classList.add('alarm');
+    sirenOnce();
+    alarmTimer = setInterval(sirenOnce, 800); // ulang tiap 0.8 detik
+    let on = false;
+    titleTimer = setInterval(() => {   // judul tab kedap-kedip
+      document.title = on ? '🔔 DIA KANGEN!' : originalTitle;
+      on = !on;
+    }, 500);
+  }
+
+  function stopAlarm() {
+    clearInterval(alarmTimer); alarmTimer = null;
+    clearInterval(titleTimer); document.title = originalTitle;
+    document.body.classList.remove('alarm');
+  }
+
+  stopBtn.addEventListener('click', stopAlarm);
+
+  // WAJIB diklik sekali biar browser ngizinin audio
+  enableBtn.addEventListener('click', async () => {
+    getCtx(); sirenOnce();
+    if ('Notification' in window) await Notification.requestPermission();
+    // Coba tahan layar gak sleep selama tab kebuka
+    try { if ('wakeLock' in navigator) await navigator.wakeLock.request('screen'); } catch(e) {}
+    enableBtn.textContent = 'Siap nerima alarm ✓';
+  });
+
+  const es = new EventSource('/api/stream');
+  es.onmessage = (e) => {
+    const data = JSON.parse(e.data);
+    if (data.type === 'hello') return;
+    const t = new Date(data.time).toLocaleTimeString('id-ID');
+    statusEl.textContent = '🔔 DIA KANGEN! ' + t;
+    statusEl.classList.add('alert');
+    startAlarm();
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('Dia kangen!', {
+        body: 'Cepetan call dia sekarang ❤️',
+        requireInteraction: true,   // notif gak auto-ilang di Windows/Chrome
+      });
+    }
+    const line = document.createElement('div');
+    line.textContent = '• ' + t;
+    logEl.prepend(line);
+  };
+  es.onerror = () => { statusEl.textContent = 'Koneksi putus… refresh ya'; };
+</script>
+</body>
+</html>
